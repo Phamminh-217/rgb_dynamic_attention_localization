@@ -74,37 +74,26 @@ Hệ thống tuân thủ nghiêm ngặt nguyên lý **Phân tách mối quan tâ
 ├── docs/
 │   └── COLAB_TRAINING_GUIDE.md# Hướng dẫn chi tiết chạy train trên Google Colab
 ├── checkpoints/               # Nơi lưu trữ weights (.pth) và đồ thị kết quả
-├── config.json                # File cấu hình
+├── config.json                # File cấu hình siêu tham số huấn luyện đầy đủ
+├── train.py                   # Script huấn luyện & đánh giá chính
 ├── scripts/                   # Thư mục chứa các script chính chạy offline/suy luận
 │   ├── preprocess_offline.py  # Tiền xử lý YOLOv8 tạo attention map offline
-│   └── inference.py           # Đánh giá quỹ đạo và chạy suy luận robot siêu tham số huấn luyện đầy đủ
-├── config_mini.json           # File cấu hình huấn luyện thử nghiệm nhanh
-├── create_mini_dataset.py     # Script trích xuất nhanh tập dữ liệu mini để test local
-│   scripts/preprocess_offline.py  # Script tiền xử lý YOLOv8 tạo attention map offline
-├── train.py                   # Script huấn luyện & đánh giá chính
-│   scripts/inference.py           # Công cụ chạy suy luận và so sánh quỹ đạo thực tế
+│   └── inference.py           # Đánh giá quỹ đạo và chạy suy luận robot
+├── config_test/               # [Local Only] Thư mục chứa cấu hình chạy thử nghiệm nhanh (Được ignore)
+│   ├── config_mini.json       # File cấu hình huấn luyện thử nghiệm nhanh
+│   └── create_mini_dataset.py # Script trích xuất nhanh tập dữ liệu mini để test local
 ```
 
 ---
 
 ## 💻 Hướng Dẫn Sử Dụng Nhanh (Quick Start)
-
-### 1. Tạo tập mini và test nhanh local (5 giây)
-```bash
-# Trích xuất 200 ảnh ngẫu nhiên cân bằng lớp và sinh cấu hình mini
-python3 create_mini_dataset.py
-
-# Huấn luyện thử nghiệm 10 epochs
-python3 train.py --config config_mini.json
-```
-
-### 2. Huấn luyện đầy đủ trên máy local hoặc Google Colab
+### 1. Huấn luyện đầy đủ trên máy local hoặc Google Colab
 Đọc hướng dẫn chi tiết tại [COLAB_TRAINING_GUIDE.md](docs/COLAB_TRAINING_GUIDE.md). Lệnh chạy chính thức:
 ```bash
 python3 train.py --config config.json --colab
 ```
 
-### 3. Đánh giá quỹ đạo và chạy suy luận trực tiếp
+### 2. Đánh giá quỹ đạo và chạy suy luận trực tiếp
 ```bash
 # Vẽ biểu đồ so sánh quỹ đạo test và tính toán sai số bằng centimet
 PYTHONPATH=. python3 scripts/inference.py --config config.json --model_path checkpoints/best_model.pth --trajectory
