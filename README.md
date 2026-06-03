@@ -71,8 +71,7 @@ Hệ thống tuân thủ nghiêm ngặt nguyên lý **Phân tách mối quan tâ
 │   └── architecture.py        # Định nghĩa mạng nơ-ron FeatureAttentionHierarchicalNet
 ├── utils/
 │   └── dataset.py             # Dataloader, chuẩn hóa tọa độ Min-Max
-├── docs/
-│   └── COLAB_TRAINING_GUIDE.md# Hướng dẫn chi tiết chạy train trên Google Colab
+├── COLAB_TRAINING_GUIDE.md    # Hướng dẫn chi tiết chạy train trên Google Colab
 ├── checkpoints/               # Nơi lưu trữ weights (.pth) và đồ thị kết quả
 ├── config.json                # File cấu hình siêu tham số huấn luyện đầy đủ
 ├── train.py                   # Script huấn luyện & đánh giá chính
@@ -88,7 +87,7 @@ Hệ thống tuân thủ nghiêm ngặt nguyên lý **Phân tách mối quan tâ
 
 ## 💻 Hướng Dẫn Sử Dụng Nhanh (Quick Start)
 ### 1. Huấn luyện đầy đủ trên máy local hoặc Google Colab
-Đọc hướng dẫn chi tiết tại [COLAB_TRAINING_GUIDE.md](docs/COLAB_TRAINING_GUIDE.md). Lệnh chạy chính thức:
+Đọc hướng dẫn chi tiết tại [COLAB_TRAINING_GUIDE.md](COLAB_TRAINING_GUIDE.md). Lệnh chạy chính thức:
 ```bash
 python3 train.py --config config.json --colab
 ```
