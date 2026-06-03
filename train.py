@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader, random_split
 
 from utils.dataset import RobotLocalizationDataset
 from models.architecture import FeatureAttentionHierarchicalNet
-from preprocess_offline import is_preprocessed_ready, preprocess_offline
+from scripts.preprocess_offline import is_preprocessed_ready, preprocess_offline
 
 
 def parse_args() -> argparse.Namespace:

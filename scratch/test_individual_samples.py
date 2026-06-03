@@ -7,7 +7,7 @@ from PIL import Image
 from torchvision import transforms
 
 from models.architecture import FeatureAttentionHierarchicalNet
-from inference import denormalize_coordinates, build_attention_map_live
+from scripts.inference import denormalize_coordinates, build_attention_map_live
 
 def main():
     config_path = "config.json"

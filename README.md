@@ -74,12 +74,15 @@ Hệ thống tuân thủ nghiêm ngặt nguyên lý **Phân tách mối quan tâ
 ├── docs/
 │   └── COLAB_TRAINING_GUIDE.md# Hướng dẫn chi tiết chạy train trên Google Colab
 ├── checkpoints/               # Nơi lưu trữ weights (.pth) và đồ thị kết quả
-├── config.json                # File cấu hình siêu tham số huấn luyện đầy đủ
+├── config.json                # File cấu hình
+├── scripts/                   # Thư mục chứa các script chính chạy offline/suy luận
+│   ├── preprocess_offline.py  # Tiền xử lý YOLOv8 tạo attention map offline
+│   └── inference.py           # Đánh giá quỹ đạo và chạy suy luận robot siêu tham số huấn luyện đầy đủ
 ├── config_mini.json           # File cấu hình huấn luyện thử nghiệm nhanh
 ├── create_mini_dataset.py     # Script trích xuất nhanh tập dữ liệu mini để test local
-├── preprocess_offline.py      # Script tiền xử lý YOLOv8 tạo attention map offline
+│   scripts/preprocess_offline.py  # Script tiền xử lý YOLOv8 tạo attention map offline
 ├── train.py                   # Script huấn luyện & đánh giá chính
-└── inference.py               # Công cụ chạy suy luận và so sánh quỹ đạo thực tế
+│   scripts/inference.py           # Công cụ chạy suy luận và so sánh quỹ đạo thực tế
 ```
 
 ---
@@ -104,8 +107,8 @@ python3 train.py --config config.json --colab
 ### 3. Đánh giá quỹ đạo và chạy suy luận trực tiếp
 ```bash
 # Vẽ biểu đồ so sánh quỹ đạo test và tính toán sai số bằng centimet
-python3 inference.py --config config.json --model_path checkpoints/best_model.pth --trajectory
+PYTHONPATH=. python3 scripts/inference.py --config config.json --model_path checkpoints/best_model.pth --trajectory
 
 # Chạy suy luận robot cho một ảnh thô bất kỳ
-python3 inference.py --config config.json --model_path checkpoints/best_model.pth --image_path <đường-dẫn-ảnh>
+PYTHONPATH=. python3 scripts/inference.py --config config.json --model_path checkpoints/best_model.pth --image_path <đường-dẫn-ảnh>
 ```

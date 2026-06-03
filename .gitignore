@@ -38,7 +38,7 @@ docs/
 .gemini/
 .idea/
 .vscode/
-
+config_test/
 # Jupyter Notebooks
 .ipynb_checkpoints
 
