@@ -77,20 +77,43 @@ def ensure_colab_dataset(config: dict) -> None:
     drive_zip_path = Path(config["colab"]["drive_zip_path"])
     local_dataset_dir = Path(config["colab"]["local_dataset_dir"])
 
-    if local_dataset_dir.exists() and any(local_dataset_dir.iterdir()):
+    if not local_dataset_dir.exists() or not any(local_dataset_dir.iterdir()):
+        if not drive_zip_path.exists():
+            raise FileNotFoundError(f"Google Drive data.zip archive not found at: {drive_zip_path}")
+
+        local_dataset_dir.mkdir(parents=True, exist_ok=True)
+        print(f"[Colab] Unpacking dataset from Drive: {drive_zip_path} -> Local: {local_dataset_dir}...")
+        
+        with zipfile.ZipFile(drive_zip_path, "r") as zip_ref:
+            zip_ref.extractall(local_dataset_dir)
+        print("[Colab] Dataset extraction completed successfully.")
+    else:
         print("[Colab] Dataset already exists on local SSD runtime. Skipping extraction.")
-        return
 
-    if not drive_zip_path.exists():
-        raise FileNotFoundError(f"Google Drive data.zip archive not found at: {drive_zip_path}")
-
-    local_dataset_dir.mkdir(parents=True, exist_ok=True)
-    print(f"[Colab] Unpacking dataset from Drive: {drive_zip_path} -> Local: {local_dataset_dir}...")
+    # Dynamically create symbolic link to local './data' folder to sync relative paths
+    local_data_link = Path("data")
     
-    with zipfile.ZipFile(drive_zip_path, "r") as zip_ref:
-        zip_ref.extractall(local_dataset_dir)
+    # Remove existing link or directory if it is a symlink
+    if local_data_link.is_symlink():
+        local_data_link.unlink()
+    elif local_data_link.exists() and not any(local_data_link.iterdir()):
+        # If it's an empty directory, we can safely remove it to replace with symlink
+        local_data_link.rmdir()
 
-    print("[Colab] Dataset extraction completed successfully.")
+    # Determine source directory (handle both zipping data/ folder directly or its contents)
+    if (local_dataset_dir / "data").exists():
+        src_dir = local_dataset_dir / "data"
+    else:
+        src_dir = local_dataset_dir
+
+    import os
+    try:
+        os.symlink(src_dir.absolute(), local_data_link.absolute())
+        print(f"[Colab] Successfully linked relative paths: {local_data_link} -> {src_dir}")
+    except FileExistsError:
+        print(f"[Colab] Local '{local_data_link}' already exists. Please ensure it points to the correct dataset.")
+    except Exception as e:
+        print(f"[Colab] Warning: Could not create symbolic link: {e}")
 
 
 def ensure_preprocessed_data(config: dict, config_path: str) -> dict:
