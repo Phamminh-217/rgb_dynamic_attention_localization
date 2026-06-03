@@ -32,6 +32,9 @@ venv.bak/
 data/
 checkpoints/
 yolov8n.pt
+data.zip
+*.zip
+docs/
 .gemini/
 .idea/
 .vscode/
