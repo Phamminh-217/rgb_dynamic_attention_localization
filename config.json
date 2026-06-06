@@ -36,8 +36,8 @@
   "global_normalization": {
     "x_min": -1.143259525,
     "x_max": 0.30597198,
-    "y_min": -0.002151571,
-    "y_max": 2.099891186
+    "y_min": -0.30597198,
+    "y_max": 1.143259525
   },
   "labels": {
     "room": 0,
@@ -64,7 +64,8 @@
     "epochs": 100,
     "learning_rate": 0.001,
     "weight_decay": 0.0001,
-    "checkpoint_interval": 10
+    "checkpoint_interval": 10,
+    "early_stopping_patience": 15
   },
   "loss": {
     "gamma": 0.5

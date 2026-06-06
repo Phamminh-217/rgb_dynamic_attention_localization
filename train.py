@@ -394,6 +394,10 @@ def main() -> None:
     epochs = int(config["training"]["epochs"])
     gamma = float(config["loss"]["gamma"])
     checkpoint_interval = int(config["training"].get("checkpoint_interval", 10))
+    
+    # Initialize Early Stopping variables
+    epochs_no_improve = 0
+    early_stopping_patience = int(config["training"].get("early_stopping_patience", 15))
 
     print("\n--- Initiating Multi-task Training Loop ---")
     for epoch in range(start_epoch, epochs + 1):
@@ -422,6 +426,10 @@ def main() -> None:
         is_best = val_metrics["val_total_loss"] < best_val_loss
         if is_best:
             best_val_loss = val_metrics["val_total_loss"]
+            epochs_no_improve = 0
+            print(f"🥇 [Save] Epoch {epoch:03d}: Saved new best model checkpoint with validation loss: {best_val_loss:.5f}")
+        else:
+            epochs_no_improve += 1
 
         # Build checkpoint dictionary
         checkpoint = {
@@ -445,6 +453,11 @@ def main() -> None:
             )
 
         print_epoch_summary(epoch, train_metrics, val_metrics, best_val_loss)
+
+        # Early Stopping trigger
+        if epochs_no_improve >= early_stopping_patience:
+            print(f"\n🛑 [Early Stopping] Validation loss did not improve for {early_stopping_patience} consecutive epochs. Training stopped early at Epoch {epoch:03d}.\n")
+            break
 
     print("\nTraining completed successfully.")
 
