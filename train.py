@@ -10,6 +10,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, random_split
+import matplotlib.pyplot as plt
 
 from utils.dataset import RobotLocalizationDataset
 from models.architecture import FeatureAttentionHierarchicalNet
@@ -148,6 +149,9 @@ def train_one_epoch(
     total_loss_sum = 0.0
     topo_loss_sum = 0.0
     coord_loss_sum = 0.0
+    
+    topo_correct = 0
+    total_samples = 0
 
     for batch in train_loader:
         # Unpack tensors conforming to dataset shape contracts
@@ -177,11 +181,17 @@ def train_one_epoch(
         topo_loss_sum += loss_topo.item()
         coord_loss_sum += loss_coord.item()
 
+        # Compute topological classification accuracy
+        preds = torch.argmax(topo_logits, dim=1)
+        topo_correct += (preds == topo_labels).sum().item()
+        total_samples += topo_labels.size(0)
+
     num_batches = len(train_loader)
     return {
         "train_total_loss": total_loss_sum / num_batches,
         "train_topo_loss": topo_loss_sum / num_batches,
         "train_coord_loss": coord_loss_sum / num_batches,
+        "train_topo_acc": topo_correct / total_samples,
     }
 
 
@@ -199,6 +209,9 @@ def validate_one_epoch(
     total_loss_sum = 0.0
     topo_loss_sum = 0.0
     coord_loss_sum = 0.0
+    
+    topo_correct = 0
+    total_samples = 0
 
     with torch.no_grad():
         for batch in val_loader:
@@ -219,11 +232,17 @@ def validate_one_epoch(
             topo_loss_sum += loss_topo.item()
             coord_loss_sum += loss_coord.item()
 
+            # Compute topological classification accuracy
+            preds = torch.argmax(topo_logits, dim=1)
+            topo_correct += (preds == topo_labels).sum().item()
+            total_samples += topo_labels.size(0)
+
     num_batches = len(val_loader)
     return {
         "val_total_loss": total_loss_sum / num_batches,
         "val_topo_loss": topo_loss_sum / num_batches,
         "val_coord_loss": coord_loss_sum / num_batches,
+        "val_topo_acc": topo_correct / total_samples,
     }
 
 
@@ -399,6 +418,19 @@ def main() -> None:
     epochs_no_improve = 0
     early_stopping_patience = int(config["training"].get("early_stopping_patience", 15))
 
+    # Initialize history list to record training progress
+    history = {
+        "epoch": [],
+        "train_total_loss": [],
+        "train_topo_loss": [],
+        "train_coord_loss": [],
+        "train_topo_acc": [],
+        "val_total_loss": [],
+        "val_topo_loss": [],
+        "val_coord_loss": [],
+        "val_topo_acc": []
+    }
+
     print("\n--- Initiating Multi-task Training Loop ---")
     for epoch in range(start_epoch, epochs + 1):
         # Train epoch
@@ -431,6 +463,18 @@ def main() -> None:
         else:
             epochs_no_improve += 1
 
+        # Record metrics in history
+        history["epoch"].append(epoch)
+        history["train_total_loss"].append(train_metrics["train_total_loss"])
+        history["train_topo_loss"].append(train_metrics["train_topo_loss"])
+        history["train_coord_loss"].append(train_metrics["train_coord_loss"])
+        history["train_topo_acc"].append(train_metrics["train_topo_acc"])
+        
+        history["val_total_loss"].append(val_metrics["val_total_loss"])
+        history["val_topo_loss"].append(val_metrics["val_topo_loss"])
+        history["val_coord_loss"].append(val_metrics["val_coord_loss"])
+        history["val_topo_acc"].append(val_metrics["val_topo_acc"])
+
         # Build checkpoint dictionary
         checkpoint = {
             "epoch": epoch,
@@ -460,6 +504,68 @@ def main() -> None:
             break
 
     print("\nTraining completed successfully.")
+
+    # Plot and save training history curves
+    try:
+        plt.figure(figsize=(12, 5), dpi=150)
+        
+        # Left subplot: Loss curves
+        plt.subplot(1, 2, 1)
+        plt.plot(history["epoch"], history["train_total_loss"], "b-", label="Train Total Loss", linewidth=1.5)
+        plt.plot(history["epoch"], history["val_total_loss"], "r-", label="Val Total Loss", linewidth=1.5)
+        plt.plot(history["epoch"], history["val_topo_loss"], "g--", label="Val Topo Loss (CE)", alpha=0.6)
+        plt.plot(history["epoch"], history["val_coord_loss"], "m--", label="Val Coord Loss (L1)", alpha=0.6)
+        plt.title("Multi-task Training and Validation Losses")
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.legend(frameon=True)
+        plt.grid(True, linestyle=":", alpha=0.6)
+        
+        # Right subplot: Accuracy curves
+        plt.subplot(1, 2, 2)
+        plt.plot(history["epoch"], [acc * 100 for acc in history["train_topo_acc"]], "b-", label="Train Topo Acc", linewidth=1.5)
+        plt.plot(history["epoch"], [acc * 100 for acc in history["val_topo_acc"]], "r-", label="Val Topo Acc", linewidth=1.5)
+        plt.title("Topological Classification Accuracy")
+        plt.xlabel("Epoch")
+        plt.ylabel("Accuracy (%)")
+        plt.legend(frameon=True)
+        plt.grid(True, linestyle=":", alpha=0.6)
+        
+        plt.tight_layout()
+        curves_path = Path(config["checkpoint"]["local_dir"]) / "training_curves.png"
+        plt.savefig(curves_path, dpi=300)
+        plt.close()
+        print(f"📈 [Save] Successfully generated and saved training curves to: {curves_path}")
+        
+        # Save training history data to a tab-separated text file
+        history_txt_path = Path(config["checkpoint"]["local_dir"]) / "training_history.txt"
+        with open(history_txt_path, "w", encoding="utf-8") as f:
+            f.write("Epoch\tTrain_Total_Loss\tTrain_Topo_Loss\tTrain_Coord_Loss\tTrain_Topo_Acc\tVal_Total_Loss\tVal_Topo_Loss\tVal_Coord_Loss\tVal_Topo_Acc\n")
+            for i in range(len(history["epoch"])):
+                f.write(
+                    f"{history['epoch'][i]}\t"
+                    f"{history['train_total_loss'][i]:.6f}\t"
+                    f"{history['train_topo_loss'][i]:.6f}\t"
+                    f"{history['train_coord_loss'][i]:.6f}\t"
+                    f"{history['train_topo_acc'][i]:.6f}\t"
+                    f"{history['val_total_loss'][i]:.6f}\t"
+                    f"{history['val_topo_loss'][i]:.6f}\t"
+                    f"{history['val_coord_loss'][i]:.6f}\t"
+                    f"{history['val_topo_acc'][i]:.6f}\n"
+                )
+        print(f"📄 [Save] Successfully exported training metrics data to: {history_txt_path}")
+        
+        # Copy curves and txt data to Google Drive if Colab mode is active
+        if args.colab or config["colab"]["enabled"]:
+            drive_checkpoint_dir = config["colab"].get("drive_checkpoint_dir")
+            if drive_checkpoint_dir is not None:
+                drive_path = Path(drive_checkpoint_dir)
+                drive_path.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(curves_path, drive_path / "training_curves.png")
+                shutil.copy2(history_txt_path, drive_path / "training_history.txt")
+                print(f"📈 [Colab] Successfully backed up training curves & history data to Google Drive: {drive_path}/")
+    except Exception as e:
+        print(f"Warning: Could not generate training curves/history data: {e}")
 
     # Step 11: Final evaluation on the Test set using the best model weights
     best_checkpoint_path = Path(config["checkpoint"]["local_dir"]) / "best_model.pth"

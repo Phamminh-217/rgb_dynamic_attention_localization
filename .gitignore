@@ -31,7 +31,7 @@ venv.bak/
 # Project Specific
 data/
 checkpoints/logs
-checkpoints
+checkpoints/
 yolov8n.pt
 data.zip
 *.zip

@@ -31,6 +31,7 @@ Dưới đây là các chỉ số đánh giá chi tiết trên tập kiểm th�
 | `frame_000628.png` | Room | Room (100% conf) | (+0.3060m, +0.0523m) | (+0.2267m, +0.0791m) | **8.37 cm** |
 
 *Biểu đồ so sánh quỹ đạo thực tế và dự đoán được lưu tại: [checkpoints/trajectory_comparison.png](checkpoints/trajectory_comparison.png)*
+*Đồ thị biểu diễn lịch sử tổn thất (loss) và độ chính xác (accuracy) huấn luyện: [checkpoints/training_curves.png](checkpoints/training_curves.png)*
 
 ---
 
