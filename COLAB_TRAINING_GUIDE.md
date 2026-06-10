@@ -60,8 +60,8 @@ drive.mount('/content/drive')
 
 #### **Cell 2: Clone dự án từ GitHub và liên kết dữ liệu**
 ```bash
-# Clone source code
-!git clone https://github.com/Phamminh-217/rgb_dynamic_attention_localization.git
+# Clone source code trực tiếp từ nhánh dev_v1
+!git clone -b dev_v1 https://github.com/Phamminh-217/rgb_dynamic_attention_localization.git
 %cd rgb_dynamic_attention_localization
 
 # Tạo symbolic link trỏ đến thư mục encoder trên Google Drive
