@@ -40,6 +40,7 @@ docs/
 .idea/
 .vscode/
 config_test/
+ground_truth_encoder/
 # Jupyter Notebooks
 .ipynb_checkpoints
 

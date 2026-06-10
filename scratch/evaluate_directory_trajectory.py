@@ -156,25 +156,13 @@ def main():
     plt.figure(figsize=(10, 8), dpi=150)
     plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
 
-    # Plot predictions
-    plt.plot(all_pred_coords[:, 0], all_pred_coords[:, 1], "r--", label="Predicted Trajectory", alpha=0.8, linewidth=1.5)
-    plt.scatter(all_pred_coords[:, 0], all_pred_coords[:, 1], c="red", s=10, marker="x", alpha=0.7)
+    # Plot predictions (only scatter dots)
+    plt.scatter(all_pred_coords[:, 0], all_pred_coords[:, 1], c="red", s=3, marker="o", alpha=0.7, label="Predicted Trajectory")
 
-    # Plot GT if available
+    # Plot GT if available (only scatter dots)
     if any_gt:
         gt_valid = all_gt_coords[has_gt_list]
-        plt.plot(gt_valid[:, 0], gt_valid[:, 1], "g-", label="Ground Truth Trajectory", alpha=0.7, linewidth=2)
-        plt.scatter(gt_valid[:, 0], gt_valid[:, 1], c="green", s=10, alpha=0.5)
-
-        # Draw errors connecting lines
-        step = max(1, len(all_pred_coords) // 100)
-        for i in range(0, len(all_pred_coords), step):
-            if has_gt_list[i]:
-                plt.plot(
-                    [all_gt_coords[i, 0], all_pred_coords[i, 0]],
-                    [all_gt_coords[i, 1], all_pred_coords[i, 1]],
-                    "k:", alpha=0.3, linewidth=0.8
-                )
+        plt.scatter(gt_valid[:, 0], gt_valid[:, 1], c="green", s=3, alpha=0.5, label="Ground Truth Trajectory")
 
         # Metrics
         errors = np.sqrt(np.sum((gt_valid - all_pred_coords[has_gt_list]) ** 2, axis=1))
@@ -186,16 +174,7 @@ def main():
         )
     else:
         plt.title(f"Predicted Trajectory Only ({images_dir.name})", fontsize=12, fontweight="bold", pad=15)
-
-    # Draw Start / End points
-    plt.plot(all_pred_coords[0, 0], all_pred_coords[0, 1], "y*", markersize=16, markeredgecolor="black", label="START")
-    plt.plot(all_pred_coords[-1, 0], all_pred_coords[-1, 1], "b*", markersize=16, markeredgecolor="black", label="END")
-
-    plt.text(all_pred_coords[0, 0] + 0.03, all_pred_coords[0, 1] + 0.03, "START", fontsize=9, fontweight="bold", 
-             color="black", bbox=dict(facecolor='yellow', alpha=0.8, boxstyle='round,pad=0.3'))
-    plt.text(all_pred_coords[-1, 0] + 0.03, all_pred_coords[-1, 1] + 0.03, "END", fontsize=9, fontweight="bold", 
-             color="white", bbox=dict(facecolor='blue', alpha=0.8, boxstyle='round,pad=0.3'))
-
+        
     plt.xlabel("X Coordinate (meters)", fontsize=10)
     plt.ylabel("Y Coordinate (meters)", fontsize=10)
     plt.legend(frameon=True, facecolor="white", edgecolor="gray", loc="upper left")

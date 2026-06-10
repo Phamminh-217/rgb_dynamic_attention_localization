@@ -10,26 +10,38 @@ Tài liệu này hướng dẫn chi tiết cách chạy huấn luyện mô hình
 1. **Nén dữ liệu:** Bạn nén toàn bộ thư mục `data` ở máy local thành file `data.zip` và upload lên Google Drive.
 2. **Giải nén tốc độ cao:** Khi chạy `train.py` với cờ `--colab`, mã nguồn sẽ tự động giải nén file `data.zip` từ Google Drive sang ổ cứng SSD cục bộ của máy ảo Colab (`/content/dataset`) chỉ trong vài giây.
 3. **Tự động sao lưu:** Trong suốt quá trình huấn luyện, các file model checkpoint (`best_model.pth`, `epoch_xxx.pth`) sẽ được lưu đồng thời ở máy ảo và **sao lưu trực tiếp về Google Drive** để tránh mất dữ liệu khi máy ảo Colab bị ngắt kết nối.
+4. **Tích hợp Encoder Ground Truth:** Thư mục chứa file odometry của encoder (`ground_truth_encoder/`) được liên kết trực tiếp từ Google Drive vào thư mục chạy của máy ảo để làm nguồn đối chiếu khi cần chạy lại tiền xử lý dữ liệu.
 
 ---
 
 ## 🛠 Bước 1: Chuẩn Bị Dữ Liệu Trên Google Drive
 
 1. Trên máy tính cá nhân (sau khi đã chạy tiền xử lý sinh ra các ảnh attention map thành công), bạn nén thư mục `data/` thành file `data.zip`.
-   * *Lưu ý:* Cấu trúc bên trong file zip phải chứa các thư mục con:
+   * *Lưu ý:* Cấu trúc bên trong file zip phải chứa các thư mục con của cả 5 Area:
      ```text
      data.zip
      ├── raw/
-     │   ├── room/
-     │   └── corridor/
+     │   ├── A/
+     │   ├── B/
+     │   ├── C/
+     │   ├── D/
+     │   └── E/
      └── processed/
          ├── attention_maps/
          └── total_poses.csv
      ```
-2. Truy cập Google Drive cá nhân của bạn.
-3. Tạo một thư mục có tên: `REGRESSION_MODEL`.
-4. Tải file `data.zip` bạn vừa nén lên thư mục này.
-   * Đường dẫn đầy đủ trên Drive sẽ là: `/content/drive/MyDrive/REGRESSION_MODEL/data.zip` (khớp hoàn toàn với cấu hình mặc định trong `config.json`).
+2. Tải cả thư mục `ground_truth_encoder/` từ máy local của bạn lên Drive (do thư mục này nằm trong `.gitignore` không đẩy lên GitHub).
+3. Truy cập Google Drive cá nhân của bạn và tạo một thư mục có tên: `REGRESSION_MODEL`.
+4. Upload file `data.zip` và thư mục `ground_truth_encoder/` lên thư mục này. Cấu trúc trên Drive sẽ là:
+   ```text
+   Google Drive (MyDrive)
+   └── REGRESSION_MODEL/
+       ├── data.zip
+       └── ground_truth_encoder/
+           ├── A/, B/, C/, D/, E/
+           └── gt_hop_nhat/
+               └── merged_odometry.csv
+   ```
 
 ---
 
@@ -46,10 +58,14 @@ from google.colab import drive
 drive.mount('/content/drive')
 ```
 
-#### **Cell 2: Clone dự án từ GitHub và di chuyển vào thư mục dự án**
+#### **Cell 2: Clone dự án từ GitHub và liên kết dữ liệu**
 ```bash
+# Clone source code
 !git clone https://github.com/Phamminh-217/rgb_dynamic_attention_localization.git
 %cd rgb_dynamic_attention_localization
+
+# Tạo symbolic link trỏ đến thư mục encoder trên Google Drive
+!ln -s /content/drive/MyDrive/REGRESSION_MODEL/ground_truth_encoder ./ground_truth_encoder
 ```
 
 #### **Cell 3: Cài đặt các thư viện cần thiết**

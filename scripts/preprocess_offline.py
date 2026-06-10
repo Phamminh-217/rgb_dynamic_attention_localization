@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 from PIL import Image
+import math
 import numpy as np
 import pandas as pd
 
@@ -36,183 +37,180 @@ def generate_attention_maps(config: dict) -> None:
     attention_maps_dir = Path(config["data"]["attention_maps_dir"])
     attention_maps_dir.mkdir(parents=True, exist_ok=True)
 
-    # Define paths to raw image directories
-    raw_dirs = {
-        "room": Path(config["data"]["room_csv"]).parent / "images",
-        "corridor": Path(config["data"]["corridor_csv"]).parent / "images"
-    }
+    # Define paths to raw image directories dynamically from config
+    raw_root = Path(config["data"]["raw_root"])
+    
+    # We will gather all image files in all subdirectories of raw_root
+    image_files = []
+    for area_dir in sorted(raw_root.iterdir()):
+        if area_dir.is_dir():
+            for run_dir in sorted(area_dir.iterdir()):
+                if run_dir.is_dir():
+                    run_imgs = sorted([
+                        f for f in run_dir.iterdir()
+                        if f.suffix.lower() in {".png", ".jpg", ".jpeg"}
+                    ])
+                    image_files.extend(run_imgs)
 
-    # Initialize YOLOv8 model only if there are maps to be generated
+    if not image_files:
+        print(f"No image files found in {raw_root}. Skipping attention maps generation.")
+        return
+
+    # Filter out images that already have generated attention maps
+    images_to_process = []
+    for img_path in image_files:
+        out_path = attention_maps_dir / img_path.name
+        if not out_path.exists():
+            images_to_process.append(img_path)
+
+    if not images_to_process:
+        print(f"All attention maps already exist. Skipping YOLOv8 inference.")
+        return
+
     yolo_model = None
 
-    for section_name, raw_dir in raw_dirs.items():
-        if not raw_dir.exists():
-            print(f"Directory {raw_dir} does not exist. Skipping section '{section_name}'.")
-            continue
+    if yolo_model is None:
+        if YOLO is None:
+            raise ImportError(
+                "The 'ultralytics' library is required to run YOLOv8 offline preprocessing. "
+                "Please run 'pip install ultralytics' first."
+            )
+        print("Loading pre-trained YOLOv8n model...")
+        yolo_model = YOLO("yolov8n.pt")
 
-        # Get list of all image frames in raw folder
-        image_files = sorted(
-            [f for f in raw_dir.iterdir() if f.suffix.lower() in {".png", ".jpg", ".jpeg"}]
-        )
+    for idx, img_path in enumerate(images_to_process):
+        try:
+            with Image.open(img_path) as img:
+                width, height = img.size
+                
+                # Create grayscale mask filled with 255 (representing static weight 1.0)
+                mask_array = np.full((height, width), 255, dtype=np.uint8)
 
-        if not image_files:
-            print(f"No image files found in {raw_dir}. Skipping section '{section_name}'.")
-            continue
-
-        # Filter out images that already have generated attention maps
-        images_to_process = []
-        for img_path in image_files:
-            out_path = attention_maps_dir / img_path.name
-            if not out_path.exists():
-                images_to_process.append(img_path)
-
-        if not images_to_process:
-            print(f"All attention maps for section '{section_name}' already exist. Skipping YOLOv8 inference.")
-            continue
-
-        print(f"\nProcessing {len(images_to_process)}/{len(image_files)} images for section '{section_name}'...")
-        
-        if yolo_model is None:
-            if YOLO is None:
-                raise ImportError(
-                    "The 'ultralytics' library is required to run YOLOv8 offline preprocessing. "
-                    "Please run 'pip install ultralytics' first."
-                )
-            print("Loading pre-trained YOLOv8n model...")
-            yolo_model = YOLO("yolov8n.pt")
-
-        for idx, img_path in enumerate(images_to_process):
-            try:
-                with Image.open(img_path) as img:
-                    width, height = img.size
+                # Run YOLOv8 offline inference on the frame
+                results = yolo_model(img_path, verbose=False)
+                
+                # Inspect detection boxes
+                for box in results[0].boxes:
+                    class_id = int(box.cls[0].item())
                     
-                    # Create grayscale mask filled with 255 (representing static weight 1.0)
-                    mask_array = np.full((height, width), 255, dtype=np.uint8)
-
-                    # Run YOLOv8 offline inference on the frame
-                    results = yolo_model(img_path, verbose=False)
-                    
-                    # Inspect detection boxes
-                    for box in results[0].boxes:
-                        class_id = int(box.cls[0].item())
+                    # Class 0 corresponds to 'person' in the COCO dataset
+                    if class_id == 0:
+                        # Extract pixel bounds of the detected person
+                        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
                         
-                        # Class 0 corresponds to 'person' in the COCO dataset
-                        if class_id == 0:
-                            # Extract pixel bounds of the detected person
-                            x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-                            
-                            # Clamp bounding boxes to image dimensions to prevent out-of-bound errors
-                            x1, y1 = max(0, x1), max(0, y1)
-                            x2, y2 = min(width, x2), min(height, y2)
-                            
-                            # Dampen the feature representation weight in the detected bounding box
-                            mask_array[y1:y2, x1:x2] = damp_value
+                        # Clamp bounding boxes to image dimensions to prevent out-of-bound errors
+                        x1, y1 = max(0, x1), max(0, y1)
+                        x2, y2 = min(width, x2), min(height, y2)
+                        
+                        # Dampen the feature representation weight in the detected bounding box
+                        mask_array[y1:y2, x1:x2] = damp_value
 
-                    # Convert the modified numpy array back to PIL Image and save
-                    attention_map_img = Image.fromarray(mask_array, mode="L")
-                    
-                    # Save with same filename to output attention maps directory
-                    out_path = attention_maps_dir / img_path.name
-                    attention_map_img.save(out_path, format="PNG")
+                # Convert the modified numpy array back to PIL Image and save
+                attention_map_img = Image.fromarray(mask_array, mode="L")
+                
+                # Save with same filename to output attention maps directory
+                out_path = attention_maps_dir / img_path.name
+                attention_map_img.save(out_path, format="PNG")
 
-                if (idx + 1) % 100 == 0 or (idx + 1) == len(images_to_process):
-                    print(f"  Processed {idx + 1}/{len(images_to_process)} images...")
-                    
-            except Exception as e:
-                print(f"Error processing image {img_path.name}: {e}")
+            if (idx + 1) % 100 == 0 or (idx + 1) == len(images_to_process):
+                print(f"  Processed {idx + 1}/{len(images_to_process)} images...")
+                
+        except Exception as e:
+            print(f"Error processing image {img_path.name}: {e}")
 
     print(f"Attention maps check completed for: {attention_maps_dir}")
 
 
 def align_and_aggregate_poses(config: dict, config_path: str) -> None:
-    """Align coordinate systems, compute global bounds, and save unified CSV dataset."""
-    print("\n--- Running Coordinate Alignment and Dataset Aggregation ---")
+    """Align coordinate systems using Encoder Ground Truth odometry, compute global bounds, and save unified CSV dataset."""
+    print("\n--- Running Encoder Odometry Ground Truth Mapping and Dataset Aggregation ---")
 
     # Read configuration parameters
-    room_csv_path = Path(config["data"]["room_csv"])
-    corridor_csv_path = Path(config["data"]["corridor_csv"])
+    raw_root = Path(config["data"]["raw_root"])
     total_csv_path = Path(config["data"]["total_csv"])
     attention_maps_dir = Path(config["data"]["attention_maps_dir"])
 
-    labels = config["labels"]
-    offsets = config["coordinate_alignment"]["corridor"]
-    delta_x = float(offsets["delta_x"])
-    delta_y = float(offsets["delta_y"])
+    # Load merged encoder odometry data
+    odometry_csv_path = Path("ground_truth_encoder/gt_hop_nhat/merged_odometry.csv")
+    if not odometry_csv_path.exists():
+        raise FileNotFoundError(f"Merged odometry file not found at: {odometry_csv_path}")
+
+    print(f"Loading merged encoder odometry from: {odometry_csv_path}")
+    odom_df = pd.read_csv(odometry_csv_path)
 
     datasets = []
 
-    # Map sections to their configuration
-    sections = [
-        {"name": "room", "csv": room_csv_path, "label": int(labels["room"]), "offset_x": 0.0, "offset_y": 0.0},
-        {"name": "corridor", "csv": corridor_csv_path, "label": int(labels["corridor"]), "offset_x": delta_x, "offset_y": delta_y}
-    ]
+    # Iterate over A-E areas configured in areas
+    for area_id, area_cfg in config["areas"].items():
+        topo_label = int(area_cfg["label"])
+        print(f"\nProcessing Area {area_id} (label: {topo_label}): {area_cfg['description']}")
 
-    for sec in sections:
-        name = sec["name"]
-        csv_path = sec["csv"]
-        topo_label = sec["label"]
-        offset_x = sec["offset_x"]
-        offset_y = sec["offset_y"]
+        for run in area_cfg["runs"]:
+            dir_name = run["dir_name"]
+            encoder_lan = int(run["encoder_lan"])
+            run_dir = raw_root / area_id / dir_name
 
-        if not csv_path.exists():
-            print(f"Poses CSV file not found: {csv_path}. Skipping section '{name}'.")
-            continue
-
-        # Load raw poses CSV using Pandas
-        print(f"Loading {name} poses from: {csv_path}")
-        pose_df = pd.read_csv(csv_path)
-
-        # Ensure poses CSV contains expected pos_x and pos_y columns
-        if "pos_x" not in pose_df.columns or "pos_y" not in pose_df.columns:
-            raise ValueError(f"CSV file {csv_path} must contain 'pos_x' and 'pos_y' columns.")
-
-        # Find raw images directory for indexing mapping
-        raw_images_dir = csv_path.parent / "images"
-        if not raw_images_dir.exists():
-            print(f"Images folder {raw_images_dir} does not exist. Skipping section '{name}'.")
-            continue
-
-        image_files = sorted(
-            [f for f in raw_images_dir.iterdir() if f.suffix.lower() in {".png", ".jpg", ".jpeg"}]
-        )
-
-        rows = []
-        for img_file in image_files:
-            # Extract index from filename suffix (e.g. prefix_000123.png -> index 123)
-            try:
-                idx = int(img_file.stem.split("_")[-1])
-            except ValueError:
-                print(f"Warning: Could not parse index suffix from {img_file.name}. Skipping file.")
+            if not run_dir.exists():
+                print(f"  Warning: Image directory {run_dir} does not exist. Skipping.")
                 continue
 
-            # Ensure index exists in the poses dataframe rows
-            if idx < 0 or idx >= len(pose_df):
-                print(f"Warning: Index {idx} out of range for CSV size {len(pose_df)}. Skipping file.")
+            # Load the matching subset of encoder odometry for this run_lan
+            run_odom = odom_df[odom_df["lan"] == encoder_lan].reset_index(drop=True)
+            if run_odom.empty:
+                print(f"  Warning: No odometry data found for lan {encoder_lan}. Skipping.")
                 continue
 
-            # Retrieve raw coordinates
-            raw_x = float(pose_df.loc[idx, "pos_x"])
-            raw_y = float(pose_df.loc[idx, "pos_y"])
+            # Get list of images in raw folder
+            image_files = sorted(
+                [f for f in run_dir.iterdir() if f.suffix.lower() in {".png", ".jpg", ".jpeg"}]
+            )
 
-            # Apply coordinate translation offset
-            global_x = raw_x + offset_x
-            global_y = raw_y + offset_y
+            if not image_files:
+                print(f"  Warning: No images found in {run_dir}. Skipping.")
+                continue
 
-            # Establish relative path contracts for DataLoader compatibility
-            rel_image_path = f"data/raw/{name}/images/{img_file.name}"
-            rel_attention_path = f"data/processed/attention_maps/{img_file.name}"
+            num_images = len(image_files)
+            num_odom = len(run_odom)
+            print(f"  Run '{dir_name}': {num_images} images, {num_odom} odometry entries. Interpolating...")
 
-            rows.append({
-                "image_path": rel_image_path,
-                "attention_path": rel_attention_path,
-                "x": global_x,
-                "y": global_y,
-                "topo_label": topo_label
-            })
+            # Linear interpolation of (x, y) poses based on image index mapping to odometry index
+            rows = []
+            for img_idx, img_file in enumerate(image_files):
+                # Map image index linearily to odometry index range [0, num_odom - 1]
+                if num_images > 1:
+                    odom_pos = img_idx * (num_odom - 1) / (num_images - 1)
+                else:
+                    odom_pos = 0.0
 
-        sec_df = pd.DataFrame(rows)
-        print(f"  Successfully mapped {len(sec_df)} frames for section '{name}'.")
-        datasets.append(sec_df)
+                odom_idx_low = int(math.floor(odom_pos))
+                odom_idx_high = min(odom_idx_low + 1, num_odom - 1)
+                weight = odom_pos - odom_idx_low
+
+                # Retrieve low and high values
+                x_low = float(run_odom.loc[odom_idx_low, "x"])
+                x_high = float(run_odom.loc[odom_idx_high, "x"])
+                y_low = float(run_odom.loc[odom_idx_low, "y"])
+                y_high = float(run_odom.loc[odom_idx_high, "y"])
+
+                # Linearly interpolate
+                global_x = x_low + weight * (x_high - x_low)
+                global_y = y_low + weight * (y_high - y_low)
+
+                # Relative paths
+                rel_image_path = f"data/raw/{area_id}/{dir_name}/{img_file.name}"
+                rel_attention_path = f"data/processed/attention_maps/{img_file.name}"
+
+                rows.append({
+                    "image_path": rel_image_path,
+                    "attention_path": rel_attention_path,
+                    "x": global_x,
+                    "y": global_y,
+                    "topo_label": topo_label
+                })
+
+            run_df = pd.DataFrame(rows)
+            datasets.append(run_df)
+            print(f"    Mapped {len(run_df)} frames.")
 
     if not datasets:
         raise RuntimeError("No datasets were successfully processed.")
@@ -231,7 +229,7 @@ def align_and_aggregate_poses(config: dict, config_path: str) -> None:
     if y_max <= y_min:
         raise ValueError("Invalid calculated y range: y_max must be greater than y_min.")
 
-    print(f"\nComputed Global Normalization Bounds:")
+    print(f"\nComputed Global Normalization Bounds from Encoder GT:")
     print(f"  X Bound: [{x_min:.4f}, {x_max:.4f}]")
     print(f"  Y Bound: [{y_min:.4f}, {y_max:.4f}]")
 
