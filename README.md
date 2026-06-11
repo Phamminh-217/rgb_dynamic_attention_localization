@@ -18,7 +18,7 @@
 
 ## 📌 Tổng Quan Dự Án
 
-Dự án triển khai hệ thống **định vị robot di động phân cấp trong nhà** từ ảnh RGB đơn kênh, kết hợp cơ chế **Feature-level Dynamic Attention** — tự động loại bỏ ảnh hưởng của vật thể động (người đi bộ) khỏi quá trình trích xuất đặc trưng.
+Dự án triển khai hệ thống **định vị robot di động phân cấp trong nhà** từ ảnh RGB ba kênh, kết hợp cơ chế **Feature-level Dynamic Attention** — tự động loại bỏ ảnh hưởng của vật thể động (người đi bộ) khỏi quá trình trích xuất đặc trưng.
 
 Hệ thống giải quyết bài toán **đa nhiệm (Multi-task)**:
 - **Nhánh 1 — Phân loại Topo** (`Classification`): Nhận diện khu vực địa lý (Area A–E).
@@ -278,7 +278,7 @@ PYTHONPATH=. python3 scratch/inference_custom.py \
 
 ## 📬 Liên Hệ
 
-Dự án được phát triển trong khuôn khổ nghiên cứu định vị robot trong nhà dùng ảnh RGB đơn.
+Dự án được phát triển trong khuôn khổ nghiên cứu định vị robot trong nhà dùng ảnh RGB ba kênh.
 
 ---
 
