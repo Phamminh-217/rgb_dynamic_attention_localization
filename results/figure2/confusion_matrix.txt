@@ -1,0 +1,9 @@
+Topological Area Confusion Matrix
+Rows: Actual Area, Columns: Predicted Area
+
+      A     B     C     D     E
+A      88     0     0     0     0
+B       0   124     0     0     0
+C       0     0    63     0     0
+D       0     0     0    80     0
+E       0     0     0     0    55

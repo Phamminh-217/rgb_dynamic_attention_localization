@@ -28,22 +28,28 @@ ENV/
 env.bak/
 venv.bak/
 
-# Project Specific
+# Project Specific - Large Binary/Data Files
 data/
 checkpoints/logs
 checkpoints/
 yolov8n.pt
 data.zip
 *.zip
+ground_truth_encoder/
+
+# Docs (Internal Design Specs - Not for public)
 docs/
+
+# IDE
 .gemini/
 .idea/
 .vscode/
 config_test/
-ground_truth_encoder/
+
 # Jupyter Notebooks
 .ipynb_checkpoints
 
 # OS files
 .DS_Store
 Thumbs.db
+*.img

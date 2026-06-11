@@ -1,0 +1,38 @@
+=========================================================
+             MODEL PERFORMANCE SUMMARY REPORT            
+=========================================================
+
+1. TOPOLOGICAL CLASSIFICATION BRANCH PERFORMANCE:
+  - Accuracy:                  100.0000%
+  - Precision (Macro Average): 100.0000%
+  - Recall (Macro Average):    100.0000%
+  - F1-Score (Macro Average):  100.0000%
+
+  Detailed Topo Branch Report:
+              precision  recall  f1-score  support
+A                   1.0     1.0       1.0     88.0
+B                   1.0     1.0       1.0    124.0
+C                   1.0     1.0       1.0     63.0
+D                   1.0     1.0       1.0     80.0
+E                   1.0     1.0       1.0     55.0
+accuracy            1.0     1.0       1.0      1.0
+macro avg           1.0     1.0       1.0    410.0
+weighted avg        1.0     1.0       1.0    410.0
+
+2. REGRESSION POSITIONING BRANCH PERFORMANCE:
+  - Mean Absolute Error X (MAE X): 0.295373 m
+  - Mean Absolute Error Y (MAE Y): 0.487449 m
+  - Mean Euclidean Distance Error: 0.618743 m
+  - RMSE X: 0.383402 m
+  - RMSE Y: 0.622583 m
+  - RMSE Euclidean: 0.731168 m
+
+  Localization Success Metrics (at various tolerance thresholds):
+  Threshold    | Accuracy   | Precision  | Recall     | F1-Score  
+  ------------------------------------------------------------------
+  0.5m         |     45.37% |    100.00% |     45.37% |     62.42%
+  1.0m         |     83.90% |    100.00% |     83.90% |     91.25%
+  1.5m         |     97.32% |    100.00% |     97.32% |     98.64%
+  2.0m         |     99.51% |    100.00% |     99.51% |     99.76%
+
+=========================================================
