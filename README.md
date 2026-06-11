@@ -95,7 +95,7 @@ Input RGB Image (H×W×3)
 
 **Hàm mất mát đa nhiệm:**
 ```
-L = λ_cls · L_CE + λ_reg · L_MSE     (λ_cls > λ_reg)
+L = L_CE + γ · L_SmoothL1     (γ = 0.5)
 ```
 
 ---
