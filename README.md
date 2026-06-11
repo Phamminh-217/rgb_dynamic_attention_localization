@@ -10,7 +10,7 @@
 [![Branch](https://img.shields.io/badge/Branch-dev__v1-purple)](https://github.com)
 [![CUDA](https://img.shields.io/badge/CUDA-12.1-76b900?logo=nvidia)](https://developer.nvidia.com/cuda-toolkit)
 
-[📖 Tiếng Việt](#) | [📖 English](#english-version)
+**🇻🇳 Tiếng Việt** | **[🇬🇧 English](README_EN.md)**
 
 </div>
 
@@ -267,31 +267,6 @@ PYTHONPATH=. python3 scratch/inference_custom.py \
 | `val_ratio` | 20% | Tỷ lệ tập validation |
 | `test_ratio` | 10% | Tỷ lệ tập kiểm thử |
 | `seed` | 42 | Hạt nhân ngẫu nhiên |
-
----
-
-## 🌐 English Version
-
-### Overview
-This project implements a **hierarchical indoor robot localization system** from single RGB images with **Feature-level Dynamic Attention**. The system uses YOLOv8 (offline) to detect and suppress dynamic objects (pedestrians) at the CNN feature level, then performs **multi-task prediction**: topological area classification (A–E) and continuous coordinate regression $(x, y)$.
-
-### Key Results
-- **100% Topological Classification** Accuracy on Test Set
-- **0.619 m Mean Euclidean Error** for position regression
-- **83.9% localization success** within 1.0 m tolerance
-
-### Quick Start
-```bash
-git clone -b dev_v1 https://github.com/<your-username>/rgb_dynamic_attention_localization.git
-cd rgb_dynamic_attention_localization
-pip install -r requirements.txt
-
-# Train
-python3 train.py --config config.json
-
-# Evaluate
-python3 evaluation/evaluate.py --model checkpoints/best_model.pth --config config.json --device cuda --history checkpoints/training_history.txt
-```
 
 ---
 
