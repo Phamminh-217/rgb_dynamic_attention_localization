@@ -7,7 +7,7 @@
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.4.1-orange?logo=pytorch)](https://pytorch.org/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Branch](https://img.shields.io/badge/Branch-dev__v1-purple)](https://github.com)
+[![Branch](https://img.shields.io/badge/Branch-main-purple)](https://github.com)
 [![CUDA](https://img.shields.io/badge/CUDA-12.1-76b900?logo=nvidia)](https://developer.nvidia.com/cuda-toolkit)
 
 **🇻🇳 Tiếng Việt** | **[🇬🇧 English](README_EN.md)**
@@ -150,7 +150,7 @@ rgb_dynamic_attention_localization/
 ### Cài đặt
 ```bash
 # Clone repository
-git clone -b dev_v1 https://github.com/<your-username>/rgb_dynamic_attention_localization.git
+git clone https://github.com/<your-username>/rgb_dynamic_attention_localization.git
 cd rgb_dynamic_attention_localization
 
 # Cài đặt thư viện
